@@ -1,11 +1,14 @@
-import React from 'react'
+import React from "react";
+import Hero from "../Components/Hero.jsx";
+import LatestProdcuts from "../Components/LatestProdcuts.jsx";
 
 function Home() {
   return (
     <div>
-      <h1 className='mt-12 text-center text-2xl'>E Commerce Website</h1>
+      <Hero />
+      <LatestProdcuts />
     </div>
-  )
+  );
 }
 
-export default Home
+export default Home;
