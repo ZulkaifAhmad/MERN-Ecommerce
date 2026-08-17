@@ -3,9 +3,9 @@ import { assets } from '../assets/frontend_assets/assets.js'
 
 export default function HeroBanner() {
   return (
-    <section className="w-full border border-gray-200 relative overflow-hidden">
-      <div className="grid grid-cols-1 md:grid-cols-2 min-h-[320px] md:min-h-[420px] ">
-        <div className="flex items-center bg-white px-8 sm:px-10 ">
+    <section className="w-full mt-12 sm:mt-4 border border-gray-500 relative overflow-hidden">
+      <div className="grid gap-2  grid-cols-1 md:grid-cols-2 min-h-[320px] md:min-h-[420px] ">
+        <div className="flex py-10 items-center bg-white px-8 sm:px-10 ">
           <div>
             {/* Eyebrow */}
             <div className="flex items-center gap-3 mb-5">
@@ -33,7 +33,7 @@ export default function HeroBanner() {
           <img
             src={assets.hero_img}
             alt="Latest arrivals model"
-            className="absolute inset-0 w-full h-fit object-left object-cover "
+            className="md:h-80 inset-0 w-full md:h-fit object-left object-cover "
           />
         </div>
       </div>

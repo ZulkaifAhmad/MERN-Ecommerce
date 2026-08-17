@@ -2,21 +2,11 @@ import React, { useContext, useEffect } from "react";
 import { myContext } from "../Context/ShopContext";
 import { Link } from "react-router-dom";
 
-function slugify(text) {
-  return text
-    .toString()
-    .toLowerCase()
-    .trim()
-    .replace(/[^\w\s-]/g, "")
-    .replace(/[\s_]+/g, "-")
-    .replace(/-+/g, "-");
-}
 
 function Product({ id, name, price, image }) {
   const { currency } = useContext(myContext);
-    const slug = slugify(name);
   return (
-    <Link to={`/product/${slug}`}>
+    <Link to={`/product/${id}`}>
       <div className="group cursor-pointer">
         {/* Image */}
         <div className="overflow-hidden bg-gray-100 aspect-[3/4]">
