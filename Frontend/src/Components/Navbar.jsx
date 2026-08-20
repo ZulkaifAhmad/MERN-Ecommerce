@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
 import { assets } from "../assets/frontend_assets/assets.js";
-import { Link, NavLink } from "react-router-dom";
+import { Link, NavLink, useNavigate } from "react-router-dom";
+import { myContext } from "../Context/ShopContext.jsx";
 
 function Navbar() {
   const pages = [
@@ -10,7 +11,15 @@ function Navbar() {
     { path: "/contact", route: "Contact", id: "19d" },
   ];
 
+  const navigate = useNavigate();
+  const { setShowCollectionSearch, setCollectionSearch } = useContext(myContext);
   let [visual, setVisual] = useState(false);
+
+  const handleSearchClick = () => {
+    setCollectionSearch("");
+    setShowCollectionSearch(true);
+    navigate("/collection");
+  };
 
   return (
     <nav className="px-4 sm:px-6 md:px-0 py-3 sm:py-4 md:py-7 flex justify-between items-center">
@@ -33,6 +42,7 @@ function Navbar() {
       <div className="flex gap-3 sm:gap-5 items-center">
         <img
           src={assets.search_icon}
+          onClick={handleSearchClick}
           className="w-4 cursor-pointer"
           alt="search"
         />

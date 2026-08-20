@@ -1,9 +1,12 @@
-import React, { createContext } from 'react'
+import React, { createContext, useState } from 'react'
 import { products } from '../assets/frontend_assets/assets.js'
 
 export let myContext = createContext()
 
 function ShopContext({children}) {
+    const [showCollectionSearch, setShowCollectionSearch] = useState(false)
+    const [collectionSearch, setCollectionSearch] = useState('')
+
     let latest_products = {
         products
     }
@@ -11,7 +14,7 @@ function ShopContext({children}) {
     let delevery_charges = 10
 
   return (
-    <myContext.Provider value={{latest_products , currency , delevery_charges}}>
+    <myContext.Provider value={{ latest_products, currency, delevery_charges, showCollectionSearch, setShowCollectionSearch, collectionSearch, setCollectionSearch }}>
         {children}
     </myContext.Provider>
   )
