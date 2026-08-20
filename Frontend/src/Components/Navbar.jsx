@@ -12,7 +12,11 @@ function Navbar() {
   ];
 
   const navigate = useNavigate();
-  const { setShowCollectionSearch, setCollectionSearch } = useContext(myContext);
+  const { setShowCollectionSearch, setCollectionSearch, cartItems } = useContext(myContext);
+  const cartItemCount = Object.values(cartItems).reduce(
+    (total, sizes) => total + Object.values(sizes).reduce((quantity, count) => quantity + count, 0),
+    0
+  );
   let [visual, setVisual] = useState(false);
 
   const handleSearchClick = () => {
@@ -73,7 +77,7 @@ function Navbar() {
             alt="cart"
           />
           <p className="absolute -bottom-1 -right-1 w-3 h-3 flex items-center justify-center text-[8px] rounded-full bg-black/70 text-white">
-            1
+            {cartItemCount}
           </p>
         </Link>
 

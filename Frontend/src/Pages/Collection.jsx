@@ -10,7 +10,8 @@ function Collection() {
   let [Categorie, setCategorie] = useState([]);
   let [subCategory, setSubCategory] = useState([]);
   let [sortType, setSortType] = useState("relevant");
-  const { showCollectionSearch, collectionSearch, setCollectionSearch } = useContext(myContext);
+  const { showCollectionSearch, collectionSearch, setCollectionSearch } =
+    useContext(myContext);
   const [searchValue, setSearchValue] = useState(collectionSearch);
 
   useEffect(() => {
@@ -193,7 +194,7 @@ function Collection() {
           <select
             value={sortType}
             onChange={(event) => setSortType(event.target.value)}
-            className="cursor-pointer border border-gray-600 outline-none p-1 rounded-md"
+            className="cursor-pointer text-gray-600 border border-gray-600 outline-none p-1"
             name="selection"
             id="select"
           >
@@ -209,7 +210,9 @@ function Collection() {
               type="text"
               value={searchValue}
               onChange={(event) => setSearchValue(event.target.value)}
-              onKeyDown={(event) => event.key === "Enter" && handleSearchSubmit()}
+              onKeyDown={(event) =>
+                event.key === "Enter" && handleSearchSubmit()
+              }
               placeholder="Search products..."
               className="w-full border border-gray-300 rounded-md px-3 py-2 outline-none focus:border-black"
             />

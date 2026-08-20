@@ -1,9 +1,12 @@
-import React, { useState, useEffect } from 'react'
+import React, { useContext, useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
-import { products } from '../assets/frontend_assets/assets.js'
+import { myContext } from '../Context/ShopContext.jsx'
+import { toast } from 'react-toastify'
+import { Link } from 'react-router-dom'
 
 function Products() {
   const { slug } = useParams()
+  const { products, currency, delevery_charges, addToCart } = useContext(myContext)
 
   const [productData, setProductData] = useState(null)
   const [mainImage, setMainImage] = useState('')
@@ -15,8 +18,19 @@ function Products() {
     if (found) {
       setProductData(found)
       setMainImage(found.image[0])
+      setSelectedSize('')
     }
   }, [slug])
+
+  const handleAddToCart = () => {
+    if (!selectedSize) {
+      toast.error('Please select a size before adding to cart.')
+      return
+    }
+
+    addToCart(productData._id, selectedSize)
+    toast.success(`${productData.name} added to cart.`)
+  }
 
   if (!productData) {
     return <div className="px-4 sm:px-10 py-16 text-center text-gray-500 text-sm">Loading...</div>
@@ -49,7 +63,6 @@ function Products() {
             ))}
           </div>
 
-          {/* Main image */}
           <div className="flex-1 bg-[#f2f2f2] max-w-sm">
             <img
               src={mainImage}
@@ -59,11 +72,9 @@ function Products() {
           </div>
         </div>
 
-        {/* Product details */}
         <div className="flex-1">
           <h1 className="text-lg sm:text-xl font-medium mt-1">{productData.name}</h1>
 
-          {/* Rating */}
           <div className="flex items-center gap-1 mt-1.5">
             {[...Array(5)].map((_, i) => (
               <span key={i} className={`text-xs ${i < 4 ? 'text-orange-500' : 'text-orange-200'}`}>
@@ -73,13 +84,12 @@ function Products() {
             <p className="text-gray-500 text-xs pl-1">(122)</p>
           </div>
 
-          <p className="text-xl font-semibold mt-3">${productData.price}</p>
+          <p className="text-xl font-semibold mt-3">{currency}{productData.price}</p>
 
           <p className="text-gray-500 text-xs mt-3 max-w-md leading-relaxed">
             {productData.description}
           </p>
 
-          {/* Size selector */}
           <div className="mt-5">
             <p className="text-sm font-medium">Select Size</p>
             <div className="flex gap-1.5 mt-1.5 flex-wrap">
@@ -99,7 +109,7 @@ function Products() {
             </div>
           </div>
 
-          <button className="bg-black text-white text-xs px-6 py-2.5 mt-5 tracking-wide active:scale-95 transition">
+          <button onClick={handleAddToCart} className="bg-black text-white text-xs px-6 py-2.5 mt-5 tracking-wide active:scale-95 transition">
             ADD TO CART
           </button>
 
@@ -108,6 +118,7 @@ function Products() {
           <div className="text-xs text-gray-500 mt-3 flex flex-col gap-1">
             <p>100% Original product.</p>
             <p>Cash on delivery is available on this product.</p>
+            <p>Delivery charge: {currency}{delevery_charges}</p>
             <p>Easy return and exchange policy within 7 days.</p>
           </div>
         </div>
@@ -172,7 +183,7 @@ function Products() {
 
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 sm:gap-4">
             {relatedProducts.map((item) => (
-              <a href={`/product/${item._id}`} key={item._id} className="group">
+              <Link to={`/product/${item._id}`} key={item._id} className="group">
                 <div className="overflow-hidden bg-[#f2f2f2]">
                   <img
                     src={item.image[0]}
@@ -181,8 +192,8 @@ function Products() {
                   />
                 </div>
                 <p className="text-xs mt-2 leading-snug">{item.name}</p>
-                <p className="text-xs font-medium mt-0.5">${item.price}</p>
-              </a>
+                <p className="text-xs font-medium mt-0.5">{currency}{item.price}</p>
+              </Link>
             ))}
           </div>
         </div>

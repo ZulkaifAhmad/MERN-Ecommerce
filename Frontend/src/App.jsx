@@ -11,6 +11,8 @@ import PlaceOrder from './Pages/PlaceOrder.jsx'
 import Products from './Pages/Products.jsx'
 import Navbar from './Components/Navbar.jsx'
 import Footer from './Components/Footer.jsx'
+import { ToastContainer } from 'react-toastify'
+import 'react-toastify/dist/ReactToastify.css'
 
 const App = () => {
   return (
@@ -28,6 +30,7 @@ const App = () => {
       <Route path='/product/:slug' element={<Products/>} />
     </Routes>
     <Footer />
+    <ToastContainer position="bottom-right" autoClose={2500} />
     </div>
   )
 }

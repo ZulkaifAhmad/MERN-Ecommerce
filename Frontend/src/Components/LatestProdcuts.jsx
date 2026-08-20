@@ -4,8 +4,8 @@ import Title from "./Title.jsx";
 import Product from "./Product.jsx";
 
 function LatestProdcuts() {
-  let { latest_products } = useContext(myContext);
-  let latestProduct = latest_products.products.slice(0, 10);
+  let { products } = useContext(myContext);
+  let latestProduct = products.slice(0, 10);
   return (
     <div className="relative mt-15">
       <div className="text-center py-8 text-3xl mt-5 sm:mt-3 mb-7">

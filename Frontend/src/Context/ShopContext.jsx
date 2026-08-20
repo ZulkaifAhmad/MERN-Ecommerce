@@ -6,15 +6,23 @@ export let myContext = createContext()
 function ShopContext({children}) {
     const [showCollectionSearch, setShowCollectionSearch] = useState(false)
     const [collectionSearch, setCollectionSearch] = useState('')
+    const [cartItems, setCartItems] = useState({})
 
-    let latest_products = {
-        products
+    const addToCart = (productId, size) => {
+        setCartItems((currentItems) => ({
+            ...currentItems,
+            [productId]: {
+                ...currentItems[productId],
+                [size]: (currentItems[productId]?.[size] || 0) + 1,
+            },
+        }))
     }
-    let currency = `$`
-    let delevery_charges = 10
+
+    const currency = '$'
+    const delevery_charges = 10
 
   return (
-    <myContext.Provider value={{ latest_products, currency, delevery_charges, showCollectionSearch, setShowCollectionSearch, collectionSearch, setCollectionSearch }}>
+    <myContext.Provider value={{ products, currency, delevery_charges, showCollectionSearch, setShowCollectionSearch, collectionSearch, setCollectionSearch, cartItems, setCartItems, addToCart }}>
         {children}
     </myContext.Provider>
   )

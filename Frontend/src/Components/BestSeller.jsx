@@ -4,11 +4,9 @@ import Title from "./Title.jsx";
 import Product from "./Product.jsx";
 
 function BestSeller() {
-  let { latest_products } = useContext(myContext);
+  let { products } = useContext(myContext);
 
-  let allProducts = latest_products?.products ?? [];
-
-  let bestSellerProducts = allProducts.filter((item) => item.bestseller === true);
+  let bestSellerProducts = products.filter((item) => item.bestseller === true);
   let latestProduct = bestSellerProducts.slice(0, 10);
 
   return (
