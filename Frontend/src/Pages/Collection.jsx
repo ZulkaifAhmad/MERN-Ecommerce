@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { assets, products } from "../assets/frontend_assets/assets.js";
 import Title from "../Components/Title.jsx";
 import Product from "../Components/Product.jsx";
+import { myContext } from "../Context/ShopContext.jsx";
 
 function Collection() {
   let [open, setOpen] = useState(false);
@@ -9,13 +10,26 @@ function Collection() {
   let [Categorie, setCategorie] = useState([]);
   let [subCategory, setSubCategory] = useState([]);
   let [sortType, setSortType] = useState("relevant");
+  const { showCollectionSearch, collectionSearch, setCollectionSearch } = useContext(myContext);
+  const [searchValue, setSearchValue] = useState(collectionSearch);
+
+  useEffect(() => {
+    setSearchValue(collectionSearch);
+  }, [collectionSearch]);
 
   useEffect(() => {
     applyFilters();
-  }, [Categorie, subCategory, sortType]);
+  }, [Categorie, subCategory, sortType, collectionSearch]);
 
   function applyFilters() {
     let productsCopy = products.slice();
+
+    if (collectionSearch.trim()) {
+      const searchQuery = collectionSearch.trim().toLowerCase();
+      productsCopy = productsCopy.filter((item) =>
+        item.name.toLowerCase().includes(searchQuery),
+      );
+    }
 
     if (Categorie.length > 0) {
       productsCopy = productsCopy.filter((item) =>
@@ -55,6 +69,10 @@ function Collection() {
         : [...prev, value],
     );
   }
+
+  const handleSearchSubmit = () => {
+    setCollectionSearch(searchValue.trim());
+  };
 
   return (
     <div className="relative px-4 mt-10 flex flex-col sm:flex-row">
@@ -184,6 +202,27 @@ function Collection() {
             <option value="low-to-high">Sort by: Low to High</option>
           </select>
         </div>
+
+        {showCollectionSearch && (
+          <div className="mt-5 flex flex-col sm:flex-row gap-3 sm:items-center">
+            <input
+              type="text"
+              value={searchValue}
+              onChange={(event) => setSearchValue(event.target.value)}
+              onKeyDown={(event) => event.key === "Enter" && handleSearchSubmit()}
+              placeholder="Search products..."
+              className="w-full border border-gray-300 rounded-md px-3 py-2 outline-none focus:border-black"
+            />
+            <button
+              type="button"
+              onClick={handleSearchSubmit}
+              className="px-4 py-2 rounded-md bg-black text-white font-medium whitespace-nowrap"
+            >
+              Search
+            </button>
+          </div>
+        )}
+
         <div className="products mt-5 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-2">
           {filterProducts.map((item) => (
             <Product
