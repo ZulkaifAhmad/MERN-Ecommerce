@@ -51,11 +51,13 @@ function Navbar() {
           alt="search"
         />
         <div className="group relative">
+          <Link to='/login'>
           <img
             src={assets.profile_icon}
             className="w-4 cursor-pointer"
             alt="profile"
           />
+          </Link>
           <div className="group-hover:block dropdown-menu absolute right-0 pt-2 hidden z-10">
             <div className="flex flex-col gap-2 mt-1 bg-white border border-gray-100 w-36 rounded p-4 shadow-md">
               <p className="cursor-pointer capitalize hover:text-black text-gray-600 whitespace-nowrap">

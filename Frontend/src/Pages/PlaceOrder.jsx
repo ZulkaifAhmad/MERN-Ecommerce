@@ -1,10 +1,13 @@
 import React, { useContext, useState } from 'react'
 import Title from '../Components/Title'
 import { myContext } from '../Context/ShopContext'
+import { useNavigate } from 'react-router-dom'
+
+
 
 function PlaceOrder() {
   const { products, currency, delevery_charges, cartItems } = useContext(myContext)
-
+  let navigate = useNavigate()
   const [method, setMethod] = useState('cod')
 
   const [formData, setFormData] = useState({
@@ -228,6 +231,7 @@ function PlaceOrder() {
         <button
           type="submit"
           disabled={total === 0}
+          onClick={()=> navigate('/orders')}
           className="mt-8 w-full sm:w-auto sm:px-16 bg-black text-white tracking-widest text-sm py-4 disabled:opacity-40"
         >
           PLACE ORDER
