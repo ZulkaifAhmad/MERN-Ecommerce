@@ -1,6 +1,7 @@
 import User from "../Schema/auth.schema.js";
 import jwt from "jsonwebtoken";
 import BlockList from "../Schema/blocklist.schema.js";
+import validator from "validator";
 
 async function Signup(req, res) {
   try {
@@ -11,18 +12,31 @@ async function Signup(req, res) {
         message: "username , password , email is required",
       });
     }
-
+    if (!validator.isLength(username, { min: 5, max: 20 })) {
+      return res.status(400).json({
+        message: "Username must be between 5 and 20 characters",
+      });
+    }
+    if (!validator.isEmail(email)) {
+      return res.json({ success: false, message: "Invalid email" });
+    }
+    if (!validator.isStrongPassword(password)) {
+      return res.json({
+        success: false,
+        message: "please try strong password",
+      });
+    }
     let check_user_by_email = await User.findOne({
       $or: [{ username }, { email }],
     });
 
     if (check_user_by_email) {
       return res.status(300).json({
-        message: "user already exists with this email",
+        message: "user already exists with this email , try unique",
       });
     }
 
-    let user = User.create({
+    let user = new User({
       username,
       password,
       email,
@@ -34,7 +48,7 @@ async function Signup(req, res) {
     res.cookies("token", token);
 
     await user.save();
-    console.log('Signup Successfully')
+    console.log("Signup Successfully");
     res.status(200).json({
       message: "signup successfully",
     });
@@ -106,7 +120,7 @@ async function Logout(req, res) {
 
   BlockList.create({ token });
   res.clearCookie("token");
-  console.log('Logout Successfully')
+  console.log("Logout Successfully");
 
   res.status(200).json({
     message: "Logout Successfully",
@@ -114,4 +128,3 @@ async function Logout(req, res) {
 }
 
 export { Signup, Login, Logout };
-

@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-let blocklist = mongoose.Schema({
+let blocklist = new mongoose.Schema({
     token : {
         type : String , 
         required : [true , 'token is requrired for block listing'] ,
@@ -13,5 +13,5 @@ let blocklist = mongoose.Schema({
 
 blocklist.index({createdAt : 1} , {expireAfterSeconds : 60 * 60 * 24 * 3 })
 
-const BlockList = mongoose.model("blocklist", blocklist);
+const BlockList = mongoose.models.blocklist || mongoose.model("blocklist", blocklist);
 export default BlockList ;

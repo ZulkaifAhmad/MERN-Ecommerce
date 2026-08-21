@@ -21,8 +21,12 @@ const userSchema = new mongoose.Schema(
       required: true,
       minlength : 5 ,
     },
+    cartData : {
+      type : Object ,
+      default : {}
+    }
   },
-  { timestamps: true },
+  { timestamps: true , minimize : false },
 );
 
 userSchema.pre("save", async function () {
@@ -37,6 +41,6 @@ userSchema.methods.comparePassword = async function (inputPassword) {
   return bcrypt.compare(inputPassword, this.password);
 };
 
-const User = mongoose.model("users", userSchema);
+const User = mongoose.models.users || mongoose.model("users", userSchema);
 
 export default User;
