@@ -127,4 +127,33 @@ async function Logout(req, res) {
   });
 }
 
-export { Signup, Login, Logout };
+async function AdminLogin(req, res) {
+  try {
+    const { email, password } = req.body;
+
+    if (email !== process.env.ADMIN_EMAIL || password !== process.env.ADMIN_PASSWORD) {
+      return res.status(401).json({ message: "Invalid admin credentials" });
+    }
+
+    const token = jwt.sign(
+      { email, role: "admin" },
+      process.env.JWT_SECRET,
+      { expiresIn: "3d" }
+    );
+
+    res.cookie("token", token, {
+      httpOnly: true,
+      sameSite: "strict",
+      maxAge: 3 * 24 * 60 * 60 * 1000, // 3 days, matches expiresIn
+    });
+
+    console.log("Admin Login Successfully");
+    res.status(200).json({ message: "Admin Login Successfully" });
+  } catch (error) {
+    res.status(500).json({
+      message: error.message || error,
+    });
+  }
+}
+
+export { Signup, Login, Logout, AdminLogin };
