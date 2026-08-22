@@ -1,6 +1,5 @@
 import Product from "../Schema/product.schema.js";
-import { v2 as claudinary } from "cloudinary";
-import upload from "../Middleware/multer.middleware.js";
+import { v2 as cloudinary } from "cloudinary";
 
 async function AddProduct(req, res) {
   try {
@@ -16,16 +15,69 @@ async function AddProduct(req, res) {
       (img) => img !== undefined,
     );
 
-    res.status(200).json({ message: "Product added successfully" });
+    let imagesUrl = await Promise.all(
+      images.map(async (image) => {
+        let result = await cloudinary.uploader.upload(image.path, {
+          resource_type: "image",
+          folder: "E-commerce-MERN-Stack-Project"
+        });
+        return result.secure_url;
+      }),
+    );
+
+    let product = new Product({
+      name,
+      sizes: JSON.parse(sizes),
+      price : Number(price),
+      description,
+      category,
+      subCategory,
+      image: imagesUrl,
+      bestseller : bestseller === 'true' ? true : false,
+    });
+
+    await product.save();
+
+    res.status(200).json({ message: "Product added successfully" , 'product' : product });
   } catch (error) {
     console.error("Error adding product:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 }
-async function GetAllProducts(req, res) {}
+async function GetAllProducts(req, res) {
+  try {
+    let products = await Product.find();
+    res.status(200).json({ message: "Products retrieved successfully", products });
+  } catch (error) {
+    console.error("Error retrieving products:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+}
 
-async function GetSingleProduct(req, res) {}
+async function GetSingleProduct(req, res) {
+  try {
+    let product = await Product.findById(req.params.id);
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+    res.status(200).json({ message: "Product retrieved successfully", product });
+  } catch (error) {
+    console.error("Error retrieving product:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+}
 
-async function removeProduct(req, res) {}
+async function removeProduct(req, res) {
+  try {
+    let product = await Product.findByIdAndDelete(req.params.id);
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+    res.status(200).json({ message: "Product removed successfully" });
+  } catch (error) {
+    console.error("Error removing product:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+}
 
 export { AddProduct, GetAllProducts, GetSingleProduct, removeProduct };
