@@ -1,44 +1,83 @@
-import { X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { X, Trash2 } from "lucide-react";
+import { toast } from "react-toastify";
 
-const dummyProducts = [
-  {
-    _id: "1",
-    image: "https://placehold.co/100x100/e2e8f0/64748b?text=Trouser",
-    name: "Men Tapered Fit Flat-Front Trousers",
-    category: "Men",
-    price: 63,
-  },
-  {
-    _id: "2",
-    image: "https://placehold.co/100x100/e2e8f0/64748b?text=T-shirt",
-    name: "Men Round Neck Pure Cotton T-shirt",
-    category: "Men",
-    price: 80,
-  },
-  {
-    _id: "3",
-    image: "https://placehold.co/100x100/e2e8f0/64748b?text=Jacket",
-    name: "Women Zip-Up Hooded Jacket",
-    category: "Women",
-    price: 95,
-  },
-  {
-    _id: "4",
-    image: "https://placehold.co/100x100/e2e8f0/64748b?text=Dress",
-    name: "Kids Printed Cotton Dress",
-    category: "Kids",
-    price: 45,
-  },
-];
+const List = ({ token, backendUrl }) => {
+  const [list, setList] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-const List = () => {
+  const fetchList = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`${backendUrl}/api/products/getall-products`);
+      const data = await response.json();
+
+      if (data.success || data.products) {
+        setList(data.products || []);
+      } else {
+        toast.error(data.message || "Failed to load products");
+      }
+    } catch (error) {
+      console.error("Error fetching product list:", error);
+      toast.error("Network error while loading products");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const removeProduct = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this product?")) {
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `${backendUrl}/api/products/delete-product/${id}`,
+        {
+          method: "DELETE",
+          headers: {
+            token: token,
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success("Product deleted successfully");
+        await fetchList();
+      } else {
+        toast.error(data.message || "Failed to delete product");
+      }
+    } catch (error) {
+      console.error("Error removing product:", error);
+      toast.error("Network error while deleting product");
+    }
+  };
+
+  useEffect(() => {
+    fetchList();
+  }, []);
+
   return (
-    <div className="flex flex-col gap-2 text-sm">
-      <p className="text-lg text-gray-700">All Products List</p>
+    <div className="flex flex-col gap-3 text-sm pb-10">
+      <div className="flex items-center justify-between">
+        <p className="text-lg font-semibold text-gray-800">
+          All Products List ({list.length})
+        </p>
+        <button
+          onClick={fetchList}
+          disabled={loading}
+          className="border border-gray-300 px-3 py-1.5 rounded text-xs font-medium text-gray-700 hover:bg-gray-100 transition cursor-pointer"
+        >
+          {loading ? "Refreshing..." : "Refresh List"}
+        </button>
+      </div>
 
-      <div className="border border-gray-200">
+      <div className="border border-gray-200 rounded overflow-hidden bg-white shadow-sm">
         {/* Table header */}
-        <div className="hidden md:grid grid-cols-[100px_1fr_120px_100px_80px] items-center bg-gray-100 py-2.5 px-3 font-semibold text-gray-700">
+        <div className="hidden md:grid grid-cols-[100px_1fr_120px_100px_80px] items-center bg-gray-100 py-3 px-4 font-semibold text-gray-700 text-xs uppercase tracking-wider">
           <span>Image</span>
           <span>Name</span>
           <span>Category</span>
@@ -47,27 +86,49 @@ const List = () => {
         </div>
 
         {/* Table rows */}
-        {dummyProducts.map((item) => (
-          <div
-            key={item._id}
-            className="grid grid-cols-[70px_1fr_60px] md:grid-cols-[100px_1fr_120px_100px_80px] items-center gap-3 py-3 px-3 border-t border-gray-200 text-gray-700"
-          >
-            <img
-              src={item.image}
-              alt={item.name}
-              className="w-16 h-16 object-cover"
-            />
-            <p className="truncate">{item.name}</p>
-            <p className="hidden md:block">{item.category}</p>
-            <p className="hidden md:block">${item.price}</p>
-            <button
-              className="text-center text-gray-600 hover:text-red-500 transition-colors cursor-pointer justify-self-center"
-              title="Remove"
+        {list.map((item) => {
+          const imageSrc = Array.isArray(item.image)
+            ? item.image[0]
+            : item.image;
+
+          return (
+            <div
+              key={item._id}
+              className="grid grid-cols-[70px_1fr_60px] md:grid-cols-[100px_1fr_120px_100px_80px] items-center gap-3 py-3 px-4 border-t border-gray-200 text-gray-700 hover:bg-gray-50 transition"
             >
-              <X size={16} />
-            </button>
+              <img
+                src={imageSrc}
+                alt={item.name}
+                className="w-14 h-16 sm:w-16 sm:h-18 object-cover rounded bg-gray-100"
+              />
+              <div>
+                <p className="font-medium text-gray-900 truncate max-w-xs sm:max-w-md">
+                  {item.name}
+                </p>
+                <p className="text-xs text-gray-400 mt-0.5 md:hidden">
+                  {item.category} • ${item.price}
+                </p>
+              </div>
+              <p className="hidden md:block text-gray-600">{item.category}</p>
+              <p className="hidden md:block font-medium text-gray-900">
+                ${item.price}
+              </p>
+              <button
+                onClick={() => removeProduct(item._id)}
+                className="text-center text-gray-400 hover:text-red-600 transition-colors cursor-pointer justify-self-center p-1.5 rounded hover:bg-red-50"
+                title="Delete Product"
+              >
+                <Trash2 size={18} />
+              </button>
+            </div>
+          );
+        })}
+
+        {list.length === 0 && !loading && (
+          <div className="py-16 text-center text-gray-400">
+            No products found in the database.
           </div>
-        ))}
+        )}
       </div>
     </div>
   );

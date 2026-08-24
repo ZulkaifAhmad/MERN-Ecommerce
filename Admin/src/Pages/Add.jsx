@@ -1,9 +1,17 @@
 import { useState } from "react";
 import { UploadCloud } from "lucide-react";
+import { toast } from "react-toastify";
 
-const Add = () => {
+const Add = ({ token, backendUrl }) => {
   const [images, setImages] = useState([null, null, null, null]);
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [price, setPrice] = useState("");
+  const [category, setCategory] = useState("Men");
+  const [subCategory, setSubCategory] = useState("Topwear");
+  const [bestseller, setBestseller] = useState(false);
   const [sizes, setSizes] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   const handleImageChange = (index, file) => {
     const updated = [...images];
@@ -17,19 +25,80 @@ const Add = () => {
     );
   };
 
+  const onSubmitHandler = async (e) => {
+    e.preventDefault();
+
+    if (sizes.length === 0) {
+      toast.error("Please select at least one size");
+      return;
+    }
+
+    if (!images[0] && !images[1] && !images[2] && !images[3]) {
+      toast.error("Please upload at least one product image");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const formData = new FormData();
+      formData.append("name", name);
+      formData.append("description", description);
+      formData.append("price", price);
+      formData.append("category", category);
+      formData.append("subCategory", subCategory);
+      formData.append("bestseller", bestseller ? "true" : "false");
+      formData.append("sizes", JSON.stringify(sizes));
+
+      if (images[0]) formData.append("image1", images[0]);
+      if (images[1]) formData.append("image2", images[1]);
+      if (images[2]) formData.append("image3", images[2]);
+      if (images[3]) formData.append("image4", images[3]);
+
+      const response = await fetch(`${backendUrl}/api/products/create-product`, {
+        method: "POST",
+        headers: {
+          token: token,
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success("Product added successfully!");
+        setName("");
+        setDescription("");
+        setPrice("");
+        setSizes([]);
+        setBestseller(false);
+        setImages([null, null, null, null]);
+      } else {
+        toast.error(data.message || "Failed to add product");
+      }
+    } catch (error) {
+      console.error("Error adding product:", error);
+      toast.error("Network error while adding product");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const sizeOptions = ["S", "M", "L", "XL", "XXL"];
 
   return (
-    <form className="flex pb-10 flex-col gap-4 max-w-xl text-sm">
+    <form onSubmit={onSubmitHandler} className="flex pb-10 flex-col gap-4 max-w-xl text-sm">
+      <h2 className="text-lg font-semibold text-gray-800">Add New Product</h2>
+
       {/* Upload Image */}
       <div>
-        <p className="mb-1.5 text-gray-700 font-medium">Upload Image</p>
+        <p className="mb-1.5 text-gray-700 font-medium">Upload Images</p>
         <div className="flex gap-2 flex-wrap">
           {images.map((img, index) => (
             <label
               key={index}
               htmlFor={`image-${index}`}
-              className="w-16 h-16 sm:w-20 sm:h-20 border border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors overflow-hidden"
+              className="w-16 h-16 sm:w-20 sm:h-20 border border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors overflow-hidden rounded"
             >
               {img ? (
                 <img
@@ -64,8 +133,11 @@ const Add = () => {
         <p className="text-gray-700 font-medium">Product name</p>
         <input
           type="text"
-          placeholder="Type here"
-          className="w-full max-w-sm px-2.5 py-1.5 border border-gray-300 outline-none focus:border-gray-500 text-sm"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="e.g. Cotton Casual Shirt"
+          required
+          className="w-full max-w-sm px-3 py-2 border border-gray-300 outline-none focus:border-slate-800 text-sm rounded"
         />
       </div>
 
@@ -73,9 +145,12 @@ const Add = () => {
       <div className="flex flex-col gap-1">
         <p className="text-gray-700 font-medium">Product description</p>
         <textarea
-          placeholder="Write content here"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="Write product details, fabric, fit, etc."
           rows={3}
-          className="w-full max-w-sm px-2.5 py-1.5 border border-gray-300 outline-none focus:border-gray-500 text-sm resize-y"
+          required
+          className="w-full max-w-sm px-3 py-2 border border-gray-300 outline-none focus:border-slate-800 text-sm resize-y rounded"
         />
       </div>
 
@@ -83,7 +158,11 @@ const Add = () => {
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="flex flex-col gap-1">
           <p className="text-gray-700 font-medium">Product category</p>
-          <select className="w-full sm:w-32 px-2.5 py-1.5 border border-gray-300 outline-none text-sm bg-white">
+          <select
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            className="w-full sm:w-32 px-2.5 py-2 border border-gray-300 outline-none text-sm bg-white rounded cursor-pointer"
+          >
             <option value="Men">Men</option>
             <option value="Women">Women</option>
             <option value="Kids">Kids</option>
@@ -92,7 +171,11 @@ const Add = () => {
 
         <div className="flex flex-col gap-1">
           <p className="text-gray-700 font-medium">Sub category</p>
-          <select className="w-full sm:w-32 px-2.5 py-1.5 border border-gray-300 outline-none text-sm bg-white">
+          <select
+            value={subCategory}
+            onChange={(e) => setSubCategory(e.target.value)}
+            className="w-full sm:w-32 px-2.5 py-2 border border-gray-300 outline-none text-sm bg-white rounded cursor-pointer"
+          >
             <option value="Topwear">Topwear</option>
             <option value="Bottomwear">Bottomwear</option>
             <option value="Winterwear">Winterwear</option>
@@ -100,11 +183,15 @@ const Add = () => {
         </div>
 
         <div className="flex flex-col gap-1">
-          <p className="text-gray-700 font-medium">Product Price</p>
+          <p className="text-gray-700 font-medium">Product Price ($)</p>
           <input
             type="number"
+            value={price}
+            onChange={(e) => setPrice(e.target.value)}
             placeholder="25"
-            className="w-full sm:w-24 px-2.5 py-1.5 border border-gray-300 outline-none focus:border-gray-500 text-sm"
+            min="1"
+            required
+            className="w-full sm:w-28 px-3 py-2 border border-gray-300 outline-none focus:border-slate-800 text-sm rounded"
           />
         </div>
       </div>
@@ -117,9 +204,9 @@ const Add = () => {
             <div
               key={size}
               onClick={() => toggleSize(size)}
-              className={`px-3 py-1.5 cursor-pointer text-sm select-none transition-colors ${
+              className={`px-3 py-1.5 cursor-pointer text-sm select-none transition-colors rounded ${
                 sizes.includes(size)
-                  ? "bg-slate-800 text-white"
+                  ? "bg-black text-white"
                   : "bg-slate-100 text-gray-700 hover:bg-slate-200"
               }`}
             >
@@ -130,15 +217,17 @@ const Add = () => {
       </div>
 
       {/* Bestseller checkbox */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 mt-1">
         <input
           type="checkbox"
           id="bestseller"
-          className="w-3.5 h-3.5 accent-slate-800 cursor-pointer"
+          checked={bestseller}
+          onChange={(e) => setBestseller(e.target.checked)}
+          className="w-4 h-4 accent-slate-800 cursor-pointer"
         />
         <label
           htmlFor="bestseller"
-          className="text-gray-700 cursor-pointer select-none text-sm"
+          className="text-gray-700 cursor-pointer select-none text-sm font-medium"
         >
           Add to bestseller
         </label>
@@ -147,9 +236,10 @@ const Add = () => {
       {/* Submit */}
       <button
         type="submit"
-        className="w-28 py-2 bg-black text-white hover:bg-gray-800 transition-colors font-medium tracking-wide text-sm"
+        disabled={loading}
+        className="w-36 py-2.5 bg-black text-white hover:bg-gray-800 transition-colors font-medium tracking-wide text-sm rounded cursor-pointer disabled:opacity-50 mt-2"
       >
-        ADD
+        {loading ? "UPLOADING..." : "ADD PRODUCT"}
       </button>
     </form>
   );

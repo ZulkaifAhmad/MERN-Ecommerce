@@ -1,51 +1,117 @@
-import React, { useContext, useState } from 'react'
-import Title from '../Components/Title'
-import { myContext } from '../Context/ShopContext'
-import { useNavigate } from 'react-router-dom'
-
-
+import React, { useContext, useState } from "react";
+import Title from "../Components/Title";
+import { myContext } from "../Context/ShopContext";
+import { toast } from "react-toastify";
 
 function PlaceOrder() {
-  const { products, currency, delevery_charges, cartItems } = useContext(myContext)
-  let navigate = useNavigate()
-  const [method, setMethod] = useState('cod')
+  const {
+    products,
+    currency,
+    delevery_charges,
+    cartItems,
+    setCartItems,
+    getCartAmount,
+    token,
+    backendUrl,
+    navigate,
+  } = useContext(myContext);
+
+  const [method, setMethod] = useState("cod");
+  const [loading, setLoading] = useState(false);
 
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    street: '',
-    city: '',
-    state: '',
-    zipcode: '',
-    country: '',
-    phone: '',
-  })
+    firstName: "",
+    lastName: "",
+    email: "",
+    street: "",
+    city: "",
+    state: "",
+    zipcode: "",
+    country: "",
+    phone: "",
+  });
 
   const onChangeHandler = (e) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
-  }
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
 
-  // Compute subtotal from cartItems
-  let subtotal = 0
-  for (const productId in cartItems) {
-    for (const size in cartItems[productId]) {
-      const quantity = cartItems[productId][size]
-      if (quantity > 0) {
-        const productData = products.find((p) => p._id === productId)
-        if (productData) subtotal += productData.price * quantity
-      }
+  const subtotal = getCartAmount();
+  const shippingFee = subtotal > 0 ? delevery_charges : 0;
+  const total = subtotal + shippingFee;
+
+  const onSubmitHandler = async (e) => {
+    e.preventDefault();
+
+    if (!token) {
+      toast.error("Please login to place an order");
+      navigate("/login");
+      return;
     }
-  }
-  const shippingFee = subtotal > 0 ? delevery_charges : 0
-  const total = subtotal + shippingFee
 
-  const onSubmitHandler = (e) => {
-    e.preventDefault()
-    // handle order placement here
-    console.log({ formData, method, total })
-  }
+    if (total === 0) {
+      toast.error("Your cart is empty");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const orderItems = [];
+
+      for (const items in cartItems) {
+        for (const item in cartItems[items]) {
+          if (cartItems[items][item] > 0) {
+            const itemInfo = structuredClone(
+              products.find((product) => product._id === items)
+            );
+            if (itemInfo) {
+              itemInfo.size = item;
+              itemInfo.quantity = cartItems[items][item];
+              orderItems.push(itemInfo);
+            }
+          }
+        }
+      }
+
+      const orderData = {
+        address: formData,
+        items: orderItems,
+        amount: total,
+      };
+
+      let endpoint = "/api/order/place";
+      if (method === "stripe") {
+        endpoint = "/api/order/stripe";
+      } else if (method === "razorpay") {
+        endpoint = "/api/order/razorpay";
+      }
+
+      const response = await fetch(`${backendUrl}${endpoint}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          token: token,
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(orderData),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setCartItems({});
+        toast.success(data.message || "Order placed successfully!");
+        navigate("/orders");
+      } else {
+        toast.error(data.message || "Failed to place order");
+      }
+    } catch (error) {
+      console.error("Error submitting order:", error);
+      toast.error("Network error while placing order");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <form
@@ -54,7 +120,7 @@ function PlaceOrder() {
     >
       {/* Delivery Information */}
       <div className="flex-1">
-        <Title title1="Delevery" title2="Information" />
+        <Title title1="Delivery" title2="Information" />
 
         <div className="flex flex-col gap-4 mt-6">
           <div className="flex gap-4">
@@ -93,7 +159,7 @@ function PlaceOrder() {
             name="street"
             value={formData.street}
             onChange={onChangeHandler}
-            placeholder="Street"
+            placeholder="Street address"
             required
             className="w-full border border-gray-300 px-4 py-3 focus:outline-none focus:border-slate-600"
           />
@@ -145,7 +211,7 @@ function PlaceOrder() {
             name="phone"
             value={formData.phone}
             onChange={onChangeHandler}
-            placeholder="Phone"
+            placeholder="Phone number"
             required
             className="w-full border border-gray-300 px-4 py-3 focus:outline-none focus:border-slate-600"
           />
@@ -175,7 +241,7 @@ function PlaceOrder() {
             {shippingFee.toFixed(2)}
           </span>
         </div>
-        <div className="py-3 flex justify-between font-bold text-slate-800">
+        <div className="py-3 flex justify-between font-bold text-slate-800 text-base">
           <span>Total</span>
           <span>
             {currency}
@@ -190,55 +256,60 @@ function PlaceOrder() {
           <div className="flex-1 h-px bg-slate-800" />
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex flex-col sm:flex-row gap-3">
           <div
-            onClick={() => setMethod('stripe')}
-            className="flex items-center gap-3 border border-gray-300 px-5 py-4 cursor-pointer flex-1"
+            onClick={() => setMethod("stripe")}
+            className="flex items-center gap-3 border border-gray-300 px-4 py-3 cursor-pointer flex-1 select-none"
           >
             <span
               className={`w-3.5 h-3.5 rounded-full border border-gray-400 ${
-                method === 'stripe' ? 'bg-green-500 border-green-500' : ''
+                method === "stripe" ? "bg-green-500 border-green-500" : ""
               }`}
             />
-            <span className="text-indigo-600 font-bold italic text-lg">stripe</span>
+            <span className="text-indigo-600 font-bold italic text-base">
+              Stripe
+            </span>
           </div>
 
           <div
-            onClick={() => setMethod('razorpay')}
-            className="flex items-center gap-3 border border-gray-300 px-5 py-4 cursor-pointer flex-1"
+            onClick={() => setMethod("razorpay")}
+            className="flex items-center gap-3 border border-gray-300 px-4 py-3 cursor-pointer flex-1 select-none"
           >
             <span
               className={`w-3.5 h-3.5 rounded-full border border-gray-400 ${
-                method === 'razorpay' ? 'bg-green-500 border-green-500' : ''
+                method === "razorpay" ? "bg-green-500 border-green-500" : ""
               }`}
             />
-            <span className="text-blue-800 font-bold italic text-lg">Razorpay</span>
+            <span className="text-blue-800 font-bold italic text-base">
+              Razorpay
+            </span>
           </div>
 
           <div
-            onClick={() => setMethod('cod')}
-            className="flex items-center gap-3 border border-gray-300 px-5 py-4 cursor-pointer flex-1"
+            onClick={() => setMethod("cod")}
+            className="flex items-center gap-3 border border-gray-300 px-4 py-3 cursor-pointer flex-1 select-none"
           >
             <span
               className={`w-3.5 h-3.5 rounded-full border border-gray-400 ${
-                method === 'cod' ? 'bg-green-500 border-green-500' : ''
+                method === "cod" ? "bg-green-500 border-green-500" : ""
               }`}
             />
-            <span className="text-slate-500 tracking-wide text-sm">CASH ON DELIVERY</span>
+            <span className="text-slate-600 tracking-wide text-xs font-semibold">
+              CASH ON DELIVERY
+            </span>
           </div>
         </div>
 
         <button
           type="submit"
-          disabled={total === 0}
-          onClick={()=> navigate('/orders')}
-          className="mt-8 w-full sm:w-auto sm:px-16 bg-black text-white tracking-widest text-sm py-4 disabled:opacity-40"
+          disabled={loading || total === 0}
+          className="mt-8 w-full bg-black text-white tracking-widest text-sm py-4 hover:bg-slate-800 disabled:opacity-40 transition cursor-pointer"
         >
-          PLACE ORDER
+          {loading ? "PROCESSING ORDER..." : "PLACE ORDER"}
         </button>
       </div>
     </form>
-  )
+  );
 }
 
-export default PlaceOrder
+export default PlaceOrder;

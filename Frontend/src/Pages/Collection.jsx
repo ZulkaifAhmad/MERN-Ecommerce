@@ -1,17 +1,18 @@
 import React, { useContext, useEffect, useState } from "react";
-import { assets, products } from "../assets/frontend_assets/assets.js";
+import { assets } from "../assets/frontend_assets/assets.js";
 import Title from "../Components/Title.jsx";
 import Product from "../Components/Product.jsx";
 import { myContext } from "../Context/ShopContext.jsx";
 
 function Collection() {
-  let [open, setOpen] = useState(false);
-  let [filterProducts, setFilterProducts] = useState(products);
-  let [Categorie, setCategorie] = useState([]);
-  let [subCategory, setSubCategory] = useState([]);
-  let [sortType, setSortType] = useState("relevant");
-  const { showCollectionSearch, collectionSearch, setCollectionSearch } =
+  const { products, showCollectionSearch, collectionSearch, setCollectionSearch } =
     useContext(myContext);
+
+  const [open, setOpen] = useState(false);
+  const [filterProducts, setFilterProducts] = useState([]);
+  const [Categorie, setCategorie] = useState([]);
+  const [subCategory, setSubCategory] = useState([]);
+  const [sortType, setSortType] = useState("relevant");
   const [searchValue, setSearchValue] = useState(collectionSearch);
 
   useEffect(() => {
@@ -20,27 +21,27 @@ function Collection() {
 
   useEffect(() => {
     applyFilters();
-  }, [Categorie, subCategory, sortType, collectionSearch]);
+  }, [products, Categorie, subCategory, sortType, collectionSearch]);
 
   function applyFilters() {
-    let productsCopy = products.slice();
+    let productsCopy = products ? products.slice() : [];
 
     if (collectionSearch.trim()) {
       const searchQuery = collectionSearch.trim().toLowerCase();
       productsCopy = productsCopy.filter((item) =>
-        item.name.toLowerCase().includes(searchQuery),
+        item.name.toLowerCase().includes(searchQuery)
       );
     }
 
     if (Categorie.length > 0) {
       productsCopy = productsCopy.filter((item) =>
-        Categorie.includes(item.category),
+        Categorie.includes(item.category)
       );
     }
 
     if (subCategory.length > 0) {
       productsCopy = productsCopy.filter((item) =>
-        subCategory.includes(item.subCategory),
+        subCategory.includes(item.subCategory)
       );
     }
 
@@ -63,11 +64,10 @@ function Collection() {
 
   function toggleSubCategory(e) {
     const { value } = e.target;
-
     setSubCategory((prev) =>
       prev.includes(value)
         ? prev.filter((item) => item !== value)
-        : [...prev, value],
+        : [...prev, value]
     );
   }
 
@@ -77,7 +77,7 @@ function Collection() {
 
   return (
     <div className="relative px-4 mt-10 flex flex-col sm:flex-row">
-      <div className="left mb-10 sm:mb-0 bg-white z-50 sticky top-0 sm:top-2 left-10 w-full sm:w-1/6">
+      <div className="left mb-10 sm:mb-0 bg-white z-20 sticky top-0 sm:top-2 left-10 w-full sm:w-1/6">
         <span className="flex flex-row gap-2 items-center">
           <h1
             onClick={() => setOpen((prev) => !prev)}
@@ -93,7 +93,7 @@ function Collection() {
           />
         </span>
         <section
-          className={`${open ? "flex gap-2" : "hidden"}  sm:flex sm:flex-col`}
+          className={`${open ? "flex gap-2" : "hidden"} sm:flex sm:flex-col`}
         >
           <div className="flex w-full flex-col mt-5 gap-1 border border-gray-400 p-4">
             <p className="font-medium mb-2">Categories</p>
@@ -130,11 +130,11 @@ function Collection() {
                 type="checkbox"
                 onChange={toggleCategory}
                 value="Kids"
-                id="Other"
+                id="Kids"
               />
               <label
                 className="text-sm cursor-pointer text-gray-700"
-                htmlFor="Other"
+                htmlFor="Kids"
               >
                 Kids
               </label>
@@ -219,7 +219,7 @@ function Collection() {
             <button
               type="button"
               onClick={handleSearchSubmit}
-              className="px-4 py-2 rounded-md bg-black text-white font-medium whitespace-nowrap"
+              className="px-4 py-2 rounded-md bg-black text-white font-medium whitespace-nowrap cursor-pointer"
             >
               Search
             </button>
@@ -237,6 +237,12 @@ function Collection() {
             />
           ))}
         </div>
+
+        {filterProducts.length === 0 && (
+          <div className="py-20 text-center text-gray-400">
+            No products found matching the criteria.
+          </div>
+        )}
       </div>
     </div>
   );

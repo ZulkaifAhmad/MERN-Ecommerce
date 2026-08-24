@@ -8,150 +8,197 @@ async function Signup(req, res) {
     const { username, password, email } = req.body;
 
     if (!username || !password || !email) {
-      return res.status(300).json({
-        message: "username , password , email is required",
+      return res.status(400).json({
+        success: false,
+        message: "Username, password, and email are required",
       });
     }
-    if (!validator.isLength(username, { min: 5, max: 20 })) {
+    if (!validator.isLength(username, { min: 3, max: 30 })) {
       return res.status(400).json({
-        message: "Username must be between 5 and 20 characters",
+        success: false,
+        message: "Username must be between 3 and 30 characters",
       });
     }
     if (!validator.isEmail(email)) {
-      return res.json({ success: false, message: "Invalid email" });
-    }
-    if (!validator.isStrongPassword(password)) {
-      return res.json({
+      return res.status(400).json({
         success: false,
-        message: "please try strong password",
+        message: "Please provide a valid email address",
       });
     }
-    let check_user_by_email = await User.findOne({
+    if (password.length < 5) {
+      return res.status(400).json({
+        success: false,
+        message: "Password must be at least 5 characters long",
+      });
+    }
+
+    const check_user = await User.findOne({
       $or: [{ username }, { email }],
     });
 
-    if (check_user_by_email) {
-      return res.status(300).json({
-        message: "user already exists with this email , try unique",
+    if (check_user) {
+      return res.status(400).json({
+        success: false,
+        message: "User already exists with this username or email",
       });
     }
 
-    let user = new User({
+    const user = new User({
       username,
       password,
       email,
     });
 
-    let token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "3d",
-    });
-    res.cookies("token", token);
-
     await user.save();
-    console.log("Signup Successfully");
+
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "7d",
+    });
+
+    res.cookie("token", token, {
+      httpOnly: true,
+      sameSite: "lax",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
+    const userObj = user.toObject();
+    delete userObj.password;
+
     res.status(200).json({
-      message: "signup successfully",
+      success: true,
+      message: "Signup successful",
+      token,
+      user: userObj,
     });
   } catch (error) {
+    console.error("Signup error:", error);
     res.status(500).json({
-      message: error.message || error,
+      success: false,
+      message: error.message || "Server error during signup",
     });
   }
 }
 
 async function Login(req, res) {
   try {
-    let { email, password } = req.body;
-    if (!password || !email) {
-      return res.status(300).json({
-        message: "password , email is required",
-      });
-    }
-    let check_user_credientials = await User.findOne({ email });
-    if (!check_user_credientials) {
-      return res.status(300).json({
-        message: "user does not exists , please Signup first",
-      });
-    }
-    let checkPassword = await check_user_credientials.comparePassword(password);
-    if (!checkPassword) {
-      return res.status(505).json({
-        message: "Password Incorrect",
-      });
-    }
-    const token = jwt.sign(
-      { id: check_user_credientials._id },
-      process.env.JWT_SECRET,
-      {
-        expiresIn: "3d",
-      },
-    );
+    const { email, password } = req.body;
 
-    res.cookie("token", token);
-    const user = check_user_credientials.toObject();
-    delete user.password;
-    console.log("User Login Successfully");
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "Email and password are required",
+      });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User does not exist. Please sign up first.",
+      });
+    }
+
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid password",
+      });
+    }
+
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "7d",
+    });
+
+    res.cookie("token", token, {
+      httpOnly: true,
+      sameSite: "lax",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
+    const userObj = user.toObject();
+    delete userObj.password;
+
     res.status(200).json({
-      message: "User Login Successfully",
-      userData: user,
+      success: true,
+      message: "User logged in successfully",
+      token,
+      userData: userObj,
     });
   } catch (error) {
-    res.status(505).json({
-      message: error.message || error,
+    console.error("Login error:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message || "Server error during login",
     });
   }
 }
 
 async function Logout(req, res) {
-  let token = req.cookies.token;
-  if (!token) {
-    return res.status(404).json({
-      message: "Token is Required",
+  try {
+    let token =
+      req.headers.token ||
+      (req.headers.authorization && req.headers.authorization.startsWith("Bearer ")
+        ? req.headers.authorization.split(" ")[1]
+        : req.cookies?.token);
+
+    if (token) {
+      const checkBlockList = await BlockList.findOne({ token });
+      if (!checkBlockList) {
+        await BlockList.create({ token });
+      }
+    }
+
+    res.clearCookie("token");
+    res.status(200).json({
+      success: true,
+      message: "Logged out successfully",
+    });
+  } catch (error) {
+    console.error("Logout error:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message || "Server error during logout",
     });
   }
-
-  const checkBlockList = await BlockList.findOne({ token });
-
-  if (checkBlockList) {
-    return res.status(303).json({
-      message: "Token Already Blocklisted",
-    });
-  }
-
-  BlockList.create({ token });
-  res.clearCookie("token");
-  console.log("Logout Successfully");
-
-  res.status(200).json({
-    message: "Logout Successfully",
-  });
 }
 
 async function AdminLogin(req, res) {
   try {
     const { email, password } = req.body;
 
-    if (email !== process.env.ADMIN_EMAIL || password !== process.env.ADMIN_PASSWORD) {
-      return res.status(401).json({ message: "Invalid admin credentials" });
+    if (
+      email !== process.env.ADMIN_EMAIL ||
+      password !== process.env.ADMIN_PASSWORD
+    ) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid admin credentials",
+      });
     }
 
     const token = jwt.sign(
       { email, role: "admin" },
       process.env.JWT_SECRET,
-      { expiresIn: "3d" }
+      { expiresIn: "7d" }
     );
 
     res.cookie("token", token, {
       httpOnly: true,
-      sameSite: "strict",
-      maxAge: 3 * 24 * 60 * 60 * 1000, // 3 days, matches expiresIn
+      sameSite: "lax",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-    console.log("Admin Login Successfully");
-    res.status(200).json({ message: "Admin Login Successfully" });
+    res.status(200).json({
+      success: true,
+      message: "Admin logged in successfully",
+      token,
+    });
   } catch (error) {
+    console.error("Admin login error:", error);
     res.status(500).json({
-      message: error.message || error,
+      success: false,
+      message: error.message || "Server error during admin login",
     });
   }
 }
